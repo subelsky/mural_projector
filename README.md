@@ -1,10 +1,11 @@
 # StoryField Mural Display
 
-An info-beamer hosted package that displays mural images from the StoryField live art installation with dissolve crossfade transitions.
+An info-beamer package that polls the StoryField API for updated mural images and displays them fullscreen on a Raspberry Pi 5 with dissolve crossfade transitions.
 
-## Overview
+## Requirements
 
-This package polls the StoryField API for updated mural images and displays them fullscreen on a Raspberry Pi 5 connected to a projector. When a new mural is detected, the display crossfades from the old image to the new one.
+- Raspberry Pi 5 with info-beamer OS 14+
+- Network access to storyfield.net and Vercel blob CDN
 
 ## Configuration
 
@@ -16,41 +17,40 @@ Configure via the info-beamer dashboard:
 | Poll Interval | 15 seconds | How often to check for new images |
 | Dissolve Duration | 1.5 seconds | Duration of the crossfade transition |
 
-## Requirements
-
-- Raspberry Pi 5
-- info-beamer OS 14+ (required for WebP image support)
-- Network access to storyfield.net and Vercel blob CDN
-
-## Development
+## Development Setup
 
 ```bash
-# Install dev dependencies
 pip install -r requirements-dev.txt
+```
 
-# Run tests
-python -m pytest tests/ -v --cov=mural_poller --cov-branch
+Run tests, linting, and local testing:
 
-# Run linting
+```bash
+python -m pytest tests/ -v --cov=mural_poller --cov-branch --cov-fail-under=100
 python -m flake8 mural_poller.py service
 python -m pylint mural_poller.py
+python test_harness.py --interval 10   # run poller locally without info-beamer
 ```
 
-## Local Testing
+## Releasing
 
-Run the poller against the live API without info-beamer:
+Push a version tag to trigger a GitHub Actions workflow that builds the package zip and creates a GitHub Release:
 
 ```bash
-python test_harness.py --interval 10
+git tag v0.1.0
+git push origin v0.1.0
 ```
 
-This downloads the current mural to `current.webp` in the project root. Press Ctrl+C to stop. The image updates whenever the mural changes.
+The info-beamer dashboard is pointed at the `latest` release download URL, so clicking **Check for updates** pulls the newest build.
 
-## Architecture
+### Building locally
 
-- `mural_poller.py` — Core logic: polling, redirect detection, image download (WebP), exponential backoff
-- `service` — Entry point that reads info-beamer config and runs the poller
-- `node.lua` — Display rendering with dissolve crossfade and cover scaling
+```bash
+make build   # downloads SDK, validates files, creates storyfield-mural-display.zip
+make clean   # remove build artifacts
+```
+
+Upload the zip to info-beamer via **Packages > Add Package > Create from ZIP upload**.
 
 ## License
 
