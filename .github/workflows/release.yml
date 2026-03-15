@@ -9,7 +9,31 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pytest pytest-cov flake8 pylint
+
+      - name: Lint (flake8)
+        run: python -m flake8 mural_poller.py service
+
+      - name: Lint (pylint)
+        run: python -m pylint mural_poller.py
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --cov=mural_poller --cov-branch --cov-fail-under=100
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
