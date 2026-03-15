@@ -1,0 +1,33 @@
+#!/usr/bin/python
+"""StoryField mural display service — polls API for new images."""
+from __future__ import print_function
+
+import sys
+import logging
+
+from hosted import config
+from mural_poller import MuralPoller
+
+# Auto-restart when config changes in the dashboard
+config.restart_on_update()
+
+# Set up logging to stderr with timestamps
+logging.basicConfig(
+    stream=sys.stderr,
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger("mural_service")
+
+# Read config
+mural_url = config.mural_url
+poll_interval = config.poll_interval
+
+# Run the poller
+poller = MuralPoller(
+    mural_url=mural_url,
+    poll_interval=poll_interval,
+    image_path="current.jpg",
+    logger=logger,
+)
+poller.run()
