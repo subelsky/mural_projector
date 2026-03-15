@@ -1,15 +1,15 @@
 {
-  "name": "mural_endpoint",
+  "name": "mural_projector",
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "runArgs": ["--name", "mural_endpoint"],
+  "runArgs": ["--name", "mural_projector"],
 
   "features": {
   },
 
   "mounts": [
-    "source=mural_endpoint-venv,target=${containerWorkspaceFolder}/.venv,type=volume"
+    "source=mural_projector-venv,target=${containerWorkspaceFolder}/.venv,type=volume"
   ],
 
   "forwardPorts": [],
