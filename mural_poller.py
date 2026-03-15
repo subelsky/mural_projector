@@ -9,7 +9,7 @@ import time
 try:
     from urllib.request import Request, build_opener, HTTPRedirectHandler
     from urllib.error import URLError, HTTPError
-except ImportError:
+except ImportError:  # pragma: no cover
     from urllib2 import Request, build_opener, HTTPRedirectHandler, URLError, HTTPError
 
 
@@ -21,15 +21,15 @@ DOWNLOAD_TIMEOUT = 30
 class _NoRedirectHandler(HTTPRedirectHandler):
     """Prevent urllib from following redirects automatically."""
 
-    def http_error_307(self, req, fp, code, msg, headers):
+    def http_error_307(self, req, fp, code, msg, headers):  # pragma: no cover
         """Return the response instead of following the redirect."""
         return fp
 
-    def http_error_302(self, req, fp, code, msg, headers):
+    def http_error_302(self, req, fp, code, msg, headers):  # pragma: no cover
         """Return the response instead of following the redirect."""
         return fp
 
-    def http_error_301(self, req, fp, code, msg, headers):
+    def http_error_301(self, req, fp, code, msg, headers):  # pragma: no cover
         """Return the response instead of following the redirect."""
         return fp
 

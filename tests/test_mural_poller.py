@@ -127,6 +127,19 @@ class TestCheckRedirect:
         with pytest.raises(URLError):
             poller.check_redirect()
 
+    @patch("mural_poller.build_opener")
+    def test_unexpected_status_raises_http_error(self, mock_build_opener):
+        """Unexpected status code (not 307, not 200) raises HTTPError."""
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 418
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
+        mock_build_opener.return_value = mock_opener
+
+        poller = self._make_poller()
+        with pytest.raises(HTTPError):
+            poller.check_redirect()
+
 
 class TestDownloadImage:
     """Tests for MuralPoller.download_image()."""
@@ -219,6 +232,18 @@ class TestDownloadImage:
             poller.download_image("https://cdn.example.com/mural-abc123.jpg")
 
         mock_remove.assert_called_once_with("/tmp/test_current.jpg.tmp")
+
+    @patch("mural_poller.os.remove", side_effect=OSError("not found"))
+    @patch("mural_poller.build_opener")
+    def test_network_error_ignores_missing_tmp(self, mock_build_opener, mock_remove):
+        """Cleanup silently ignores missing .tmp file."""
+        mock_opener = MagicMock()
+        mock_opener.open.side_effect = URLError("Connection refused")
+        mock_build_opener.return_value = mock_opener
+
+        poller = self._make_poller()
+        with pytest.raises(URLError):
+            poller.download_image("https://cdn.example.com/mural.jpg")
 
 
 class TestGetSleepDuration:
@@ -389,3 +414,25 @@ class TestRun:
         with patch.object(event, "wait", return_value=True) as mock_wait:
             poller.run(shutdown_event=event)
             mock_wait.assert_called_once_with(5)
+
+    @patch("mural_poller.time.sleep")
+    @patch.object(MuralPoller, "poll_once")
+    def test_run_without_shutdown_event_uses_time_sleep(self, mock_poll, mock_sleep):
+        """Run without shutdown_event uses time.sleep."""
+        poller = self._make_poller()
+        call_count = [0]
+
+        def stop_after_one(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] > 1:
+                raise KeyboardInterrupt
+            return False
+
+        mock_poll.side_effect = stop_after_one
+
+        try:
+            poller.run()
+        except KeyboardInterrupt:
+            pass
+
+        mock_sleep.assert_called()
