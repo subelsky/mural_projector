@@ -12,7 +12,14 @@ PACKAGE_FILES := \
 	default.webp \
 	README.md
 
-.PHONY: build clean sdk validate
+LAST_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo v0.0)
+LAST_VERSION := $(subst v,,$(LAST_TAG))
+MAJOR := $(word 1,$(subst ., ,$(LAST_VERSION)))
+MINOR := $(word 2,$(subst ., ,$(LAST_VERSION)))
+NEXT_MINOR := $(shell echo $$(($(MINOR) + 1)))
+VERSION ?= $(MAJOR).$(NEXT_MINOR)
+
+.PHONY: build clean sdk validate release
 
 build: sdk validate
 	zip $(ZIP_NAME) $(PACKAGE_FILES)
@@ -28,6 +35,11 @@ validate:
 			exit 1; \
 		fi; \
 	done
+
+release:
+	@echo "Releasing v$(VERSION)..."
+	git tag v$(VERSION)
+	git push origin v$(VERSION)
 
 clean:
 	rm -f $(ZIP_NAME) hosted.lua hosted.py
