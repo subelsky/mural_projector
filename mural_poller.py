@@ -144,3 +144,32 @@ class MuralPoller(object):
             except OSError:
                 pass
             raise
+
+    def poll_once(self):
+        """Execute one poll cycle.
+
+        Checks the API for a new image URL. If the URL has changed
+        (or this is the first poll), downloads the new image.
+
+        Returns:
+            True if a new image was downloaded, False otherwise.
+        """
+        try:
+            location = self.check_redirect()
+            self.backoff_level = 0
+
+            if location == self.current_location:
+                self.logger.debug("No change detected")
+                return False
+
+            self.logger.info("New mural detected: %s", location)
+            self.download_image(location)
+            self.current_location = location
+            return True
+        except Exception as e:
+            self.backoff_level += 1
+            self.logger.error(
+                "Poll error (backoff level %d): %s",
+                self.backoff_level, e
+            )
+            return False

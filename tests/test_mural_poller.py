@@ -259,3 +259,68 @@ class TestGetSleepDuration:
         assert poller.get_sleep_duration() == 20
         poller.backoff_level = 0
         assert poller.get_sleep_duration() == 10
+
+
+class TestPollOnce:
+    """Tests for MuralPoller.poll_once()."""
+
+    def _make_poller(self):
+        """Create a MuralPoller with test defaults."""
+        logger = logging.getLogger("test")
+        return MuralPoller(
+            mural_url="http://example.com/api/mural/latest",
+            poll_interval=15,
+            image_path="current.jpg",
+            logger=logger,
+        )
+
+    @patch.object(MuralPoller, "download_image", return_value=True)
+    @patch.object(MuralPoller, "check_redirect", return_value="https://cdn.example.com/new.jpg")
+    def test_new_location_triggers_download(self, mock_check, mock_download):
+        """New Location URL triggers image download."""
+        poller = self._make_poller()
+        poller.current_location = "https://cdn.example.com/old.jpg"
+        result = poller.poll_once()
+        assert result is True
+        mock_download.assert_called_once_with("https://cdn.example.com/new.jpg")
+        assert poller.current_location == "https://cdn.example.com/new.jpg"
+
+    @patch.object(MuralPoller, "download_image")
+    @patch.object(MuralPoller, "check_redirect", return_value="https://cdn.example.com/same.jpg")
+    def test_same_location_skips_download(self, mock_check, mock_download):
+        """Same Location URL does not trigger download."""
+        poller = self._make_poller()
+        poller.current_location = "https://cdn.example.com/same.jpg"
+        result = poller.poll_once()
+        assert result is False
+        mock_download.assert_not_called()
+
+    @patch.object(MuralPoller, "download_image", return_value=True)
+    @patch.object(MuralPoller, "check_redirect", return_value="https://cdn.example.com/first.jpg")
+    def test_first_iteration_always_downloads(self, mock_check, mock_download):
+        """First poll (current_location is None) always downloads."""
+        poller = self._make_poller()
+        assert poller.current_location is None
+        result = poller.poll_once()
+        assert result is True
+        mock_download.assert_called_once_with("https://cdn.example.com/first.jpg")
+        assert poller.current_location == "https://cdn.example.com/first.jpg"
+
+    @patch.object(MuralPoller, "check_redirect", side_effect=URLError("Connection refused"))
+    def test_error_increments_backoff(self, mock_check):
+        """Network error increments backoff_level."""
+        poller = self._make_poller()
+        assert poller.backoff_level == 0
+        poller.poll_once()
+        assert poller.backoff_level == 1
+        poller.poll_once()
+        assert poller.backoff_level == 2
+
+    @patch.object(MuralPoller, "download_image", return_value=True)
+    @patch.object(MuralPoller, "check_redirect", return_value="https://cdn.example.com/new.jpg")
+    def test_success_resets_backoff(self, mock_check, mock_download):
+        """Successful poll resets backoff_level to 0."""
+        poller = self._make_poller()
+        poller.backoff_level = 3
+        poller.poll_once()
+        assert poller.backoff_level == 0
