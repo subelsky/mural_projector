@@ -19,7 +19,7 @@ Configure via the info-beamer dashboard:
 ## Requirements
 
 - Raspberry Pi 5
-- info-beamer OS 14+
+- info-beamer OS 14+ (required for WebP image support)
 - Network access to storyfield.net and Vercel blob CDN
 
 ## Development
@@ -36,9 +36,19 @@ python -m flake8 mural_poller.py service
 python -m pylint mural_poller.py
 ```
 
+## Local Testing
+
+Run the poller against the live API without info-beamer:
+
+```bash
+python test_harness.py --interval 10
+```
+
+This downloads the current mural to `current.webp` in the project root. Press Ctrl+C to stop. The image updates whenever the mural changes.
+
 ## Architecture
 
-- `mural_poller.py` — Core logic: polling, redirect detection, image download, exponential backoff
+- `mural_poller.py` — Core logic: polling, redirect detection, image download (WebP), exponential backoff
 - `service` — Entry point that reads info-beamer config and runs the poller
 - `node.lua` — Display rendering with dissolve crossfade and cover scaling
 

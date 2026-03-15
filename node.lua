@@ -18,7 +18,7 @@ node.event("config_update", function(config)
 end)
 
 -- Watch for new mural images written by the service
-util.file_watch("current.jpg", function(raw)
+util.file_watch("current.webp", function(raw)
     -- Dispose the outgoing old image if mid-transition
     if old_image then
         old_image:dispose()
@@ -26,7 +26,7 @@ util.file_watch("current.jpg", function(raw)
     -- Current becomes old (will fade out)
     old_image = current_image
     -- Load new image (will fade in)
-    current_image = resource.load_image{ file = "current.jpg" }
+    current_image = resource.load_image{ file = "current.webp" }
     -- Start transition
     transition_start = sys.now()
 end)

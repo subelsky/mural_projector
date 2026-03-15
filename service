@@ -27,7 +27,7 @@ poll_interval = config.poll_interval
 poller = MuralPoller(
     mural_url=mural_url,
     poll_interval=poll_interval,
-    image_path="current.jpg",
+    image_path="current.webp",
     logger=logger,
 )
 poller.run()

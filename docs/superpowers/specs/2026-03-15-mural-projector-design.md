@@ -80,7 +80,7 @@ Responsibilities:
 1. Import `hosted.py`, call `config.restart_on_update()` to auto-restart on dashboard config changes
 2. Extract `mural_url`, `poll_interval` from config
 3. Set up a logger writing to stderr with timestamps
-4. Construct `MuralPoller(mural_url, poll_interval, image_path="current.jpg", logger=logger)`
+4. Construct `MuralPoller(mural_url, poll_interval, image_path="current.webp", logger=logger)`
 5. Call `poller.run()`
 
 No business logic. If `hosted.py` or config fails, it crashes — info-beamer restarts the service automatically.
@@ -102,8 +102,8 @@ No business logic. If `hosted.py` or config fails, it crashes — info-beamer re
 
 ### File Watching
 
-- `util.file_watch("current.jpg", callback)` triggers whenever the file changes on disk (info-beamer inotify)
-- In the callback: load the new image via `resource.load_image{ file = "current.jpg" }`, assign to `next_image`, set `transition_start` to current time
+- `util.file_watch("current.webp", callback)` triggers whenever the file changes on disk (info-beamer inotify)
+- In the callback: load the new image via `resource.load_image{ file = "current.webp" }`, assign to `next_image`, set `transition_start` to current time
 - Immediate — no debounce. Atomic rename guarantees file integrity.
 
 ### Rendering (`node.render()`)
@@ -163,9 +163,11 @@ Called every frame by info-beamer.
 
 - Endpoint: `GET https://<hostname>/api/mural/latest`
 - Expected response: HTTP 307 with `Location` header pointing to Vercel blob CDN
+- Image format: WebP (4096x4096 in production). info-beamer OS 14+ handles WebP natively via `resource.load_image`. The downloaded file is saved as `current.webp`.
 - Compare `Location` URL to detect changes; only download if changed
 - `Location` header lookup must be case-insensitive (handle `Location`, `location`, etc.)
 - Timeouts: 10s on redirect check, 30s on image download
+- Note: In production, the API currently redirects to `https://www.storyfield.net/api/mural/latest` which returns a 200 with the image directly. The poller's 200 fallback path (content-hash change detection) handles this correctly.
 
 ### Edge Cases
 
