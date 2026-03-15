@@ -1,0 +1,12 @@
+[MASTER]
+ignore=hosted.py,hosted.lua
+
+[MESSAGES CONTROL]
+# Allow the try/except import pattern for Python 2/3 polyglot
+disable=ungrouped-imports,wrong-import-order,import-error,duplicate-code
+
+[FORMAT]
+max-line-length=99
+
+[DESIGN]
+max-args=5
