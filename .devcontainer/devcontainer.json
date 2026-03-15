@@ -1,0 +1,17 @@
+{
+  "name": "mural_endpoint",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "runArgs": ["--name", "mural_endpoint"],
+
+  "features": {
+  },
+
+  "mounts": [
+    "source=mural_endpoint-venv,target=${containerWorkspaceFolder}/.venv,type=volume"
+  ],
+
+  "forwardPorts": [],
+  "postCreateCommand": "bash ./.devcontainer/post-create.sh"
+}
