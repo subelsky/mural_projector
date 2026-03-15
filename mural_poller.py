@@ -173,3 +173,27 @@ class MuralPoller(object):
                 self.backoff_level, e
             )
             return False
+
+    def run(self, shutdown_event=None):
+        """Main polling loop.
+
+        Continuously polls for new images and sleeps between polls.
+        Exits gracefully when shutdown_event is set.
+
+        Args:
+            shutdown_event: A threading.Event that signals the loop
+                to exit. If None, loops forever.
+        """
+        self.logger.info(
+            "Starting poller: url=%s interval=%ds",
+            self.mural_url, self.poll_interval
+        )
+        while True:
+            self.poll_once()
+            sleep_duration = self.get_sleep_duration()
+            if shutdown_event is not None:
+                if shutdown_event.wait(sleep_duration):
+                    self.logger.info("Shutdown event received")
+                    break
+            else:
+                time.sleep(sleep_duration)

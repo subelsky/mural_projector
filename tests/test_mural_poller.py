@@ -1,6 +1,7 @@
 """Tests for mural_poller module — strict red/green TDD."""
 from unittest.mock import patch, MagicMock
 import logging
+import threading
 import pytest
 import socket
 try:
@@ -324,3 +325,67 @@ class TestPollOnce:
         poller.backoff_level = 3
         poller.poll_once()
         assert poller.backoff_level == 0
+
+
+class TestRun:
+    """Tests for MuralPoller.run()."""
+
+    def _make_poller(self):
+        """Create a MuralPoller with test defaults."""
+        logger = logging.getLogger("test")
+        return MuralPoller(
+            mural_url="http://example.com/api/mural/latest",
+            poll_interval=15,
+            image_path="current.jpg",
+            logger=logger,
+        )
+
+    @patch.object(MuralPoller, "get_sleep_duration", return_value=0)
+    @patch.object(MuralPoller, "poll_once", return_value=False)
+    def test_exits_when_shutdown_event_set(self, mock_poll, mock_sleep_dur):
+        """Run loop exits when shutdown_event is set."""
+        poller = self._make_poller()
+        event = threading.Event()
+
+        def stop_after_first_call():
+            event.set()
+            return False
+
+        mock_poll.side_effect = stop_after_first_call
+        poller.run(shutdown_event=event)
+        mock_poll.assert_called_once()
+
+    @patch.object(MuralPoller, "get_sleep_duration", return_value=0)
+    @patch.object(MuralPoller, "poll_once", return_value=False)
+    def test_continues_after_errors(self, mock_poll, mock_sleep_dur):
+        """Run loop continues polling after errors."""
+        poller = self._make_poller()
+        event = threading.Event()
+        call_count = [0]
+
+        def count_and_stop(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] >= 2:
+                event.set()
+            return False
+
+        mock_poll.side_effect = count_and_stop
+        poller.run(shutdown_event=event)
+        assert mock_poll.call_count == 2
+
+    @patch.object(MuralPoller, "poll_once", return_value=False)
+    def test_sleeps_correct_duration(self, mock_poll):
+        """Run loop uses get_sleep_duration for wait time."""
+        poller = self._make_poller()
+        poller.backoff_level = 1  # Should sleep 5s
+        event = threading.Event()
+
+        def stop_immediately(*args, **kwargs):
+            event.set()
+            return False
+
+        mock_poll.side_effect = stop_immediately
+
+        with patch.object(event, "wait", return_value=True) as mock_wait:
+            poller.run(shutdown_event=event)
+            mock_wait.assert_called_once_with(5)
