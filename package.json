@@ -1,0 +1,5 @@
+{
+    "name": "StoryField Mural Display",
+    "author": "Mike Subelsky",
+    "desc": "Polls a URL for updated mural images and displays them with dissolve crossfade transitions. Built for the StoryField live art installation."
+}

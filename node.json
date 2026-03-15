@@ -1,0 +1,26 @@
+{
+    "name": "StoryField Mural Projector",
+    "permissions": {
+        "network": "true"
+    },
+    "options": [
+        {
+            "title": "Mural API URL",
+            "name": "mural_url",
+            "type": "string",
+            "default": "https://storyfield.net/api/mural/latest"
+        },
+        {
+            "title": "Poll Interval (seconds)",
+            "name": "poll_interval",
+            "type": "integer",
+            "default": 15
+        },
+        {
+            "title": "Dissolve Duration (seconds)",
+            "name": "dissolve_duration",
+            "type": "float",
+            "default": 1.5
+        }
+    ]
+}
