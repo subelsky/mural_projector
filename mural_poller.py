@@ -8,9 +8,10 @@ import time
 
 try:
     from urllib.request import Request, build_opener, HTTPRedirectHandler
-    from urllib.error import URLError, HTTPError
+    from urllib.error import URLError, HTTPError  # pylint: disable=unused-import
 except ImportError:  # pragma: no cover
-    from urllib2 import Request, build_opener, HTTPRedirectHandler, URLError, HTTPError
+    from urllib2 import (Request, build_opener, HTTPRedirectHandler,  # noqa: F401
+                         URLError, HTTPError)
 
 
 BACKOFF_SCHEDULE = [5, 10, 20, 40, 80, 120]
@@ -20,6 +21,10 @@ DOWNLOAD_TIMEOUT = 30
 
 class _NoRedirectHandler(HTTPRedirectHandler):
     """Prevent urllib from following redirects automatically."""
+
+    # These methods must match the HTTPRedirectHandler signature.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=unused-argument
 
     def http_error_307(self, req, fp, code, msg, headers):  # pragma: no cover
         """Return the response instead of following the redirect."""
@@ -34,7 +39,7 @@ class _NoRedirectHandler(HTTPRedirectHandler):
         return fp
 
 
-class MuralPoller(object):
+class MuralPoller:
     """Polls a mural API endpoint and downloads new images.
 
     Args:
@@ -166,7 +171,7 @@ class MuralPoller(object):
             self.download_image(location)
             self.current_location = location
             return True
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             self.backoff_level += 1
             self.logger.error(
                 "Poll error (backoff level %d): %s",
