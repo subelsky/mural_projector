@@ -96,6 +96,18 @@ class MuralPoller(object):
             self.mural_url, code, "Unexpected status", {}, None
         )
 
+    def get_sleep_duration(self):
+        """Calculate the sleep duration based on current backoff state.
+
+        Returns:
+            poll_interval when no errors, otherwise the backoff
+            duration from BACKOFF_SCHEDULE (capped at 120s).
+        """
+        if self.backoff_level == 0:
+            return self.poll_interval
+        index = min(self.backoff_level - 1, len(BACKOFF_SCHEDULE) - 1)
+        return BACKOFF_SCHEDULE[index]
+
     def download_image(self, url):
         """Download an image and write it atomically to disk.
 

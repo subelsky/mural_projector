@@ -218,3 +218,44 @@ class TestDownloadImage:
             poller.download_image("https://cdn.example.com/mural-abc123.jpg")
 
         mock_remove.assert_called_once_with("/tmp/test_current.jpg.tmp")
+
+
+class TestGetSleepDuration:
+    """Tests for MuralPoller.get_sleep_duration()."""
+
+    def _make_poller(self, poll_interval=15):
+        """Create a MuralPoller with test defaults."""
+        logger = logging.getLogger("test")
+        return MuralPoller(
+            mural_url="http://example.com/api/mural/latest",
+            poll_interval=poll_interval,
+            image_path="current.jpg",
+            logger=logger,
+        )
+
+    def test_returns_poll_interval_when_no_errors(self):
+        """Returns poll_interval when backoff_level is 0."""
+        poller = self._make_poller(poll_interval=15)
+        assert poller.get_sleep_duration() == 15
+
+    def test_returns_backoff_values_on_errors(self):
+        """Returns correct backoff for each error level."""
+        poller = self._make_poller()
+        expected = [5, 10, 20, 40, 80, 120]
+        for i, expected_duration in enumerate(expected):
+            poller.backoff_level = i + 1
+            assert poller.get_sleep_duration() == expected_duration
+
+    def test_backoff_caps_at_120(self):
+        """Backoff never exceeds 120 seconds."""
+        poller = self._make_poller()
+        poller.backoff_level = 100
+        assert poller.get_sleep_duration() == 120
+
+    def test_backoff_resets_to_poll_interval(self):
+        """After reset, returns poll_interval again."""
+        poller = self._make_poller(poll_interval=10)
+        poller.backoff_level = 3
+        assert poller.get_sleep_duration() == 20
+        poller.backoff_level = 0
+        assert poller.get_sleep_duration() == 10
