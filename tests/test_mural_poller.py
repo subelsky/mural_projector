@@ -125,3 +125,96 @@ class TestCheckRedirect:
         poller = self._make_poller()
         with pytest.raises(URLError):
             poller.check_redirect()
+
+
+class TestDownloadImage:
+    """Tests for MuralPoller.download_image()."""
+
+    def _make_poller(self, image_path="/tmp/test_current.jpg"):
+        """Create a MuralPoller with test defaults."""
+        logger = logging.getLogger("test")
+        return MuralPoller(
+            mural_url="http://example.com/api/mural/latest",
+            poll_interval=15,
+            image_path=image_path,
+            logger=logger,
+        )
+
+    @patch("mural_poller.os.rename")
+    @patch("mural_poller.build_opener")
+    @patch("builtins.open", create=True)
+    def test_successful_download_writes_atomically(
+        self, mock_open, mock_build_opener, mock_rename
+    ):
+        """Successful download writes to .tmp then renames."""
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"fake image bytes"
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
+        mock_build_opener.return_value = mock_opener
+
+        mock_file = MagicMock()
+        mock_open.return_value.__enter__ = MagicMock(return_value=mock_file)
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+
+        poller = self._make_poller()
+        result = poller.download_image("https://cdn.example.com/mural-abc123.jpg")
+
+        assert result is True
+        mock_open.assert_called_once_with("/tmp/test_current.jpg.tmp", "wb")
+        mock_file.write.assert_called_once_with(b"fake image bytes")
+        mock_rename.assert_called_once_with(
+            "/tmp/test_current.jpg.tmp", "/tmp/test_current.jpg"
+        )
+
+    @patch("mural_poller.os.remove")
+    @patch("mural_poller.build_opener")
+    def test_network_error_cleans_up_tmp(self, mock_build_opener, mock_remove):
+        """Network error during download cleans up .tmp file."""
+        mock_opener = MagicMock()
+        mock_opener.open.side_effect = URLError("Connection refused")
+        mock_build_opener.return_value = mock_opener
+
+        poller = self._make_poller()
+        with pytest.raises(URLError):
+            poller.download_image("https://cdn.example.com/mural-abc123.jpg")
+
+        mock_remove.assert_called_once_with("/tmp/test_current.jpg.tmp")
+
+    @patch("mural_poller.os.remove")
+    @patch("mural_poller.build_opener")
+    def test_download_timeout_cleans_up_tmp(self, mock_build_opener, mock_remove):
+        """Download timeout cleans up .tmp file."""
+        mock_opener = MagicMock()
+        mock_opener.open.side_effect = URLError(socket.timeout("timed out"))
+        mock_build_opener.return_value = mock_opener
+
+        poller = self._make_poller()
+        with pytest.raises(URLError):
+            poller.download_image("https://cdn.example.com/mural-abc123.jpg")
+
+        mock_remove.assert_called_once_with("/tmp/test_current.jpg.tmp")
+
+    @patch("mural_poller.os.remove")
+    @patch("mural_poller.os.rename", side_effect=OSError("disk full"))
+    @patch("mural_poller.build_opener")
+    @patch("builtins.open", create=True)
+    def test_write_error_cleans_up_tmp(
+        self, mock_open, mock_build_opener, mock_rename, mock_remove
+    ):
+        """Write/rename error cleans up .tmp file."""
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"fake image bytes"
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
+        mock_build_opener.return_value = mock_opener
+
+        mock_file = MagicMock()
+        mock_open.return_value.__enter__ = MagicMock(return_value=mock_file)
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+
+        poller = self._make_poller()
+        with pytest.raises(OSError):
+            poller.download_image("https://cdn.example.com/mural-abc123.jpg")
+
+        mock_remove.assert_called_once_with("/tmp/test_current.jpg.tmp")

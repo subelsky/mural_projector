@@ -95,3 +95,40 @@ class MuralPoller(object):
         raise HTTPError(
             self.mural_url, code, "Unexpected status", {}, None
         )
+
+    def download_image(self, url):
+        """Download an image and write it atomically to disk.
+
+        Downloads from url, writes to image_path.tmp, then renames
+        to image_path. Cleans up .tmp file on any failure.
+
+        Args:
+            url: The CDN URL to download the image from.
+
+        Returns:
+            True on success.
+
+        Raises:
+            URLError: On network errors or timeouts.
+            IOError: On filesystem write errors.
+        """
+        tmp_path = self.image_path + ".tmp"
+        try:
+            opener = build_opener()
+            request = Request(url)
+            response = opener.open(request, timeout=DOWNLOAD_TIMEOUT)
+            data = response.read()
+            with open(tmp_path, "wb") as f:
+                f.write(data)
+            os.rename(tmp_path, self.image_path)
+            self.logger.info(
+                "Downloaded %d bytes to %s",
+                len(data), self.image_path
+            )
+            return True
+        except Exception:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+            raise
