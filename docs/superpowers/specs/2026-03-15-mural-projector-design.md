@@ -47,9 +47,9 @@ MuralPoller(mural_url, poll_interval, image_path, logger)
 
 ### Methods
 
-**`check_redirect()`** — Sends a request to `mural_url` with `allow_redirects=False`. Returns the `Location` header value on HTTP 307. Raises on any other status code or network error.
+**`check_redirect()`** — Sends a request to `mural_url` with `allow_redirects=False` and a 10s timeout. Returns the `Location` header value on HTTP 307 (case-insensitive header lookup). On a 200 response, returns the response body for content-hash comparison. Raises on 5xx, network errors, or missing `Location` header on 307.
 
-**`download_image(url)`** — Downloads image from CDN URL. Writes to `<image_path>.tmp`, then `os.rename()` to `image_path`. Cleans up `.tmp` on failure. Returns `True` on success.
+**`download_image(url)`** — Downloads image from CDN URL with a 30s timeout. Writes to `<image_path>.tmp`, then `os.rename()` to `image_path`. Cleans up `.tmp` on failure. Returns `True` on success.
 
 **`poll_once()`** — One poll cycle: calls `check_redirect()`, compares to `current_location`, calls `download_image()` if changed, updates state. Returns `True` if a new image was downloaded. Catches errors, logs them, increments backoff.
 
@@ -66,7 +66,7 @@ MuralPoller(mural_url, poll_interval, image_path, logger)
 ### Python 2/3 Compatibility
 
 - `from __future__ import print_function`
-- `try: from urllib2 import ... except: from urllib.request import ...`
+- `try: from urllib.request import ... except ImportError: from urllib2 import ...`
 - `.format()` strings only — no f-strings, no type annotations
 - `os.rename()` for atomic writes, not pathlib
 
@@ -74,27 +74,36 @@ MuralPoller(mural_url, poll_interval, image_path, logger)
 
 A thin script (~15-20 lines) with shebang `#!/usr/bin/python`.
 
+The `service` file must be executable (`chmod +x`) with shebang `#!/usr/bin/python`.
+
 Responsibilities:
-1. Import `hosted.py`, call `hosted.config()` for configuration
-2. Extract `mural_url`, `poll_interval`
+1. Import `hosted.py`, call `config.restart_on_update()` to auto-restart on dashboard config changes
+2. Extract `mural_url`, `poll_interval` from config
 3. Set up a logger writing to stderr with timestamps
-4. Construct `MuralPoller(mural_url, poll_interval, image_path="mural.jpg", logger=logger)`
+4. Construct `MuralPoller(mural_url, poll_interval, image_path="current.jpg", logger=logger)`
 5. Call `poller.run()`
 
-No business logic. If `hosted.py` or config fails, it crashes — info-beamer restarts the service automatically. Config changes in the dashboard trigger a service restart, so no config-watching is needed.
+No business logic. If `hosted.py` or config fails, it crashes — info-beamer restarts the service automatically.
 
 ## Display: `node.lua`
 
 ### Startup
 
-- Load `hosted.lua` SDK
-- Load `default.webp` as initial texture (transparent — renders as blank on laser projector)
+- Call `gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)` to use the display's native resolution
+- Call `util.init_hosted()` to initialize the config system
+- Load `default.webp` as initial texture via `resource.load_image("default.webp")` (transparent — renders as blank on laser projector)
 - `current_image` = this texture, `next_image` = `nil`, `transition_start` = `nil`
+- Initialize `dissolve_duration` from config default (1.5s)
+
+### Config Updates
+
+- Listen for config changes via `node.event("config_update", function(config) ... end)`
+- Update `dissolve_duration` from the config table when it changes
 
 ### File Watching
 
-- `resource.open_file("mural.jpg")` returns a new object when the file changes (info-beamer inotify)
-- On change: decode as image texture, assign to `next_image`, set `transition_start` to current time
+- `util.file_watch("current.jpg", callback)` triggers whenever the file changes on disk (info-beamer inotify)
+- In the callback: load the new image via `resource.load_image{ file = "current.jpg" }`, assign to `next_image`, set `transition_start` to current time
 - Immediate — no debounce. Atomic rename guarantees file integrity.
 
 ### Rendering (`node.render()`)
@@ -115,9 +124,9 @@ Called every frame by info-beamer.
 
 ### GPU Memory
 
-- Max 2 textures at any time (current + next)
-- Dispose old `current_image` immediately on transition completion
-- Mid-transition new file: dispose `next_image`, replace with new texture, restart transition
+- Max 3 textures at any time (default placeholder, outgoing old image, incoming current image)
+- Dispose the outgoing image immediately when the dissolve completes
+- Mid-transition new file: dispose the outgoing `current_image`, promote `next_image` to `current_image`, load the new file as the new `next_image`, restart transition
 
 ## Configuration: `node.json`
 
@@ -154,8 +163,17 @@ Called every frame by info-beamer.
 
 - Endpoint: `GET https://<hostname>/api/mural/latest`
 - Expected response: HTTP 307 with `Location` header pointing to Vercel blob CDN
-- Only 307 is valid — any other status triggers backoff
 - Compare `Location` URL to detect changes; only download if changed
+- `Location` header lookup must be case-insensitive (handle `Location`, `location`, etc.)
+- Timeouts: 10s on redirect check, 30s on image download
+
+### Edge Cases
+
+- **307 with Location** — primary happy path, compare URL to detect changes
+- **200 response** — treat as direct image response, hash content to detect changes
+- **5xx error** — retry with backoff
+- **Missing Location header on 307** — log warning, retry with backoff
+- **Network timeout** — retry with backoff
 
 ## Testing Strategy
 
@@ -176,18 +194,23 @@ pytest + pytest-cov, Python 3 only. Coverage: 100% line + branch (`--cov-fail-un
 
 **`check_redirect()`:**
 - 307 returns Location header value
-- Non-307 status codes raise
+- 307 with case-variant header (`location`, `LOCATION`) still returns value
+- 307 with missing Location header raises
+- 200 response returns body for content-hash comparison
+- 5xx status codes raise
+- Network timeout (10s) raises
 - Network errors raise
-- Missing Location header raises
 
 **`download_image()`:**
 - Successful download writes atomically (verify `.tmp` then rename)
 - Network error during download cleans up `.tmp`
+- Download timeout (30s) cleans up `.tmp`
 - Write error cleans up `.tmp`
 
 **`poll_once()`:**
 - New Location triggers download
 - Same Location skips download
+- First iteration (no previous URL) always downloads
 - Error increments backoff
 - Success resets backoff
 
