@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""StoryField mural display service - polls API for new images."""
+"""StoryField mural display service — polls API for new images."""
 from __future__ import print_function
 
 import sys
