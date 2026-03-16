@@ -58,3 +58,10 @@ The device runs **Python 2.7**; dev/test runs Python 3. All Python code must wor
 
 ## Spec Reference
 `PROJECT_OVERVIEW.md` is the authoritative specification covering platform constraints, API contract, polling strategy, and all requirements.
+
+## info-beamer Documentation
+The info-beamer platform docs are at `https://info-beamer.com/doc/`. Key pages:
+- **Package reference** (`/doc/package-reference`) — `package.json` and `node.json` schema, service permissions, node.lua API
+- **Device configuration** (`/doc/device-configuration`) — networking, WiFi, device-level setup
+
+Use `WebFetch` to read these when working on platform integration, service configuration, or `node.json`/`package.json` changes.
