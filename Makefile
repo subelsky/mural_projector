@@ -19,7 +19,9 @@ MINOR := $(word 2,$(subst ., ,$(LAST_VERSION)))
 NEXT_MINOR := $(shell echo $$(($(MINOR) + 1)))
 VERSION ?= $(MAJOR).$(NEXT_MINOR)
 
-.PHONY: build clean sdk validate release
+JSON_FILES := package.json node.json
+
+.PHONY: build clean sdk validate validate-json release
 
 build: sdk validate
 	zip $(ZIP_NAME) $(PACKAGE_FILES)
@@ -28,7 +30,12 @@ sdk:
 	curl -fsSL -o hosted.lua https://raw.githubusercontent.com/info-beamer/package-sdk/master/hosted.lua
 	curl -fsSL -o hosted.py  https://raw.githubusercontent.com/info-beamer/package-sdk/master/hosted.py
 
-validate:
+validate-json:
+	@for f in $(JSON_FILES); do \
+		python -m json.tool "$$f" > /dev/null || exit 1; \
+	done
+
+validate: validate-json
 	@for f in $(PACKAGE_FILES); do \
 		if [ ! -f "$$f" ]; then \
 			echo "Error: required file missing: $$f"; \

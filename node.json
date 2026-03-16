@@ -1,7 +1,7 @@
 {
     "name": "StoryField Mural Projector",
     "permissions": {
-        "network": "true"
+        "network": "Needs to access storyfield mural API"
     },
     "options": [
         {
