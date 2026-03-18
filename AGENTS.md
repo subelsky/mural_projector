@@ -12,9 +12,13 @@ StoryField Mural Display — an info-beamer package for Raspberry Pi 5 that poll
 # Run tests (100% line+branch coverage enforced)
 python -m pytest tests/ -v --cov=mural_poller --cov-branch --cov-fail-under=100
 
-# Lint
+# Python lint
 python -m flake8 mural_poller.py service
 python -m pylint mural_poller.py
+
+# Lua lint and format check
+luacheck node.lua
+stylua --check node.lua
 
 # Build deployable zip (downloads SDK, validates files, creates zip)
 make build
@@ -22,6 +26,25 @@ make build
 # Local test run (no info-beamer required)
 python test_harness.py --interval 10 --url https://storyfield.net/api/mural/latest
 ```
+
+## Required Checks
+
+**You MUST run the relevant checks below before considering any task complete.** Do not commit, create PRs, or report success without passing results.
+
+### After changing any `.py` file:
+1. `python -m pytest tests/ -v --cov=mural_poller --cov-branch --cov-fail-under=100`
+2. `python -m flake8 mural_poller.py service`
+3. `python -m pylint mural_poller.py`
+
+### After changing any `.lua` file:
+1. `luacheck node.lua` — must report 0 warnings / 0 errors
+2. `stylua --check node.lua` — must exit 0 (no formatting diff)
+
+If `stylua --check` fails, run `stylua node.lua` to auto-fix, then verify with `luacheck` again.
+
+### Configuration
+- `.luacheckrc` — declares info-beamer globals and project lint settings
+- `.stylua.toml` — formatting rules (4-space indent, 99 col width)
 
 ## Architecture
 
