@@ -57,7 +57,7 @@ jobs:
         run: |
           missing=0
           for f in package.json package.png node.json node.lua service \
-                   hosted.lua hosted.py mural_poller.py default.webp README.md; do
+                   hosted.lua hosted.py mural_poller.py default.png README.md; do
             if [ ! -f "$f" ]; then
               echo "::error::Required file missing: $f"
               missing=1
@@ -71,7 +71,7 @@ jobs:
         run: |
           zip storyfield-mural-display.zip \
             package.json package.png node.json node.lua service \
-            hosted.lua hosted.py mural_poller.py default.webp README.md
+            hosted.lua hosted.py mural_poller.py default.png README.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
