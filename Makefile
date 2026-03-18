@@ -9,7 +9,7 @@ PACKAGE_FILES := \
 	hosted.lua \
 	hosted.py \
 	mural_poller.py \
-	default.webp \
+	default.png \
 	README.md
 
 LAST_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo v0.0)

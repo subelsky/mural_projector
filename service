@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""StoryField mural display service — polls API for new images."""
+"""StoryField mural display service - polls API for new images."""
 from __future__ import print_function
 
 import sys
@@ -27,7 +27,7 @@ poll_interval = config.poll_interval
 poller = MuralPoller(
     mural_url=mural_url,
     poll_interval=poll_interval,
-    image_path="current.webp",
+    image_path="current.png",
     logger=logger,
 )
 poller.run()

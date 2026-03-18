@@ -5,7 +5,7 @@ Usage:
     python test_harness.py [--url URL] [--interval SECONDS]
 
 This bypasses hosted.py and runs MuralPoller directly. Watch for
-current.webp appearing and updating in the working directory.
+current.png appearing and updating in the working directory.
 """
 import sys
 import os
@@ -37,8 +37,8 @@ def main():
     )
     parser.add_argument(
         "--image-path",
-        default="current.webp",
-        help="Path to write the downloaded image (default: current.webp)",
+        default="current.png",
+        help="Path to write the downloaded image (default: current.png)",
     )
     args = parser.parse_args()
 

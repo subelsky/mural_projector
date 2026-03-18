@@ -31,9 +31,9 @@ Three components communicate via the filesystem:
 
 2. **`service`** — Thin entry point (~30 lines). Imports `hosted.py` SDK for config, constructs `MuralPoller`, runs it. This is the only file that touches the info-beamer SDK.
 
-3. **`node.lua`** — Lua rendering. Watches `current.webp` via inotify (`util.file_watch`), loads new images, renders with crossfade dissolve. Manages GPU memory (max 3 textures).
+3. **`node.lua`** — Lua rendering. Watches `current.png` via inotify (`util.file_watch`), loads new images, renders with crossfade dissolve. Manages GPU memory (max 3 textures).
 
-**Data flow:** `service` polls API → detects URL change → downloads image → atomic write to `current.webp` → `node.lua` detects file change → crossfade transition.
+**Data flow:** `service` polls API → detects URL change → downloads image → atomic write to `current.png` → `node.lua` detects file change → crossfade transition.
 
 ## Critical Constraints
 
@@ -53,8 +53,8 @@ The device runs **Python 2.7**; dev/test runs Python 3. All Python code must wor
 
 ### File Conventions
 - `hosted.lua` and `hosted.py` are **vendored SDK files** — do not edit
-- Image output filename is `current.webp` (atomic write via `.tmp` + `os.rename`)
-- `default.webp` is the startup placeholder
+- Image output filename is `current.png` (atomic write via `.tmp` + `os.rename`)
+- `default.png` is the startup placeholder
 
 ## Spec Reference
 `PROJECT_OVERVIEW.md` is the authoritative specification covering platform constraints, API contract, polling strategy, and all requirements.

@@ -21,7 +21,7 @@ class TestCheckRedirect:
         return MuralPoller(
             mural_url=url,
             poll_interval=15,
-            image_path="current.webp",
+            image_path="current.png",
             logger=logger,
         )
 
@@ -144,7 +144,7 @@ class TestCheckRedirect:
 class TestDownloadImage:
     """Tests for MuralPoller.download_image()."""
 
-    def _make_poller(self, image_path="/tmp/test_current.webp"):
+    def _make_poller(self, image_path="/tmp/test_current.png"):
         """Create a MuralPoller with test defaults."""
         logger = logging.getLogger("test")
         return MuralPoller(
@@ -175,10 +175,10 @@ class TestDownloadImage:
         result = poller.download_image("https://cdn.example.com/mural-abc123.jpg")
 
         assert result is True
-        mock_open.assert_called_once_with("/tmp/test_current.webp.tmp", "wb")
+        mock_open.assert_called_once_with("/tmp/test_current.png.tmp", "wb")
         mock_file.write.assert_called_once_with(b"fake image bytes")
         mock_rename.assert_called_once_with(
-            "/tmp/test_current.webp.tmp", "/tmp/test_current.webp"
+            "/tmp/test_current.png.tmp", "/tmp/test_current.png"
         )
 
     @patch("mural_poller.os.remove")
@@ -193,7 +193,7 @@ class TestDownloadImage:
         with pytest.raises(URLError):
             poller.download_image("https://cdn.example.com/mural-abc123.jpg")
 
-        mock_remove.assert_called_once_with("/tmp/test_current.webp.tmp")
+        mock_remove.assert_called_once_with("/tmp/test_current.png.tmp")
 
     @patch("mural_poller.os.remove")
     @patch("mural_poller.build_opener")
@@ -207,7 +207,7 @@ class TestDownloadImage:
         with pytest.raises(URLError):
             poller.download_image("https://cdn.example.com/mural-abc123.jpg")
 
-        mock_remove.assert_called_once_with("/tmp/test_current.webp.tmp")
+        mock_remove.assert_called_once_with("/tmp/test_current.png.tmp")
 
     @patch("mural_poller.os.remove")
     @patch("mural_poller.os.rename", side_effect=OSError("disk full"))
@@ -231,7 +231,7 @@ class TestDownloadImage:
         with pytest.raises(OSError):
             poller.download_image("https://cdn.example.com/mural-abc123.jpg")
 
-        mock_remove.assert_called_once_with("/tmp/test_current.webp.tmp")
+        mock_remove.assert_called_once_with("/tmp/test_current.png.tmp")
 
     @patch("mural_poller.os.remove", side_effect=OSError("not found"))
     @patch("mural_poller.build_opener")
@@ -255,7 +255,7 @@ class TestGetSleepDuration:
         return MuralPoller(
             mural_url="http://example.com/api/mural/latest",
             poll_interval=poll_interval,
-            image_path="current.webp",
+            image_path="current.png",
             logger=logger,
         )
 
@@ -296,7 +296,7 @@ class TestPollOnce:
         return MuralPoller(
             mural_url="http://example.com/api/mural/latest",
             poll_interval=15,
-            image_path="current.webp",
+            image_path="current.png",
             logger=logger,
         )
 
@@ -361,7 +361,7 @@ class TestRun:
         return MuralPoller(
             mural_url="http://example.com/api/mural/latest",
             poll_interval=15,
-            image_path="current.webp",
+            image_path="current.png",
             logger=logger,
         )
 
