@@ -20,15 +20,19 @@ local white_mid = resource.create_colored_texture(1, 1, 1, 0.5)
 print("MURAL: test pattern textures created")
 
 -- Update config when changed in dashboard
-node.event("config_update", function(config)
-    print("MURAL: config_update received")
+util.json_watch("config.json", function(config)
+    print("MURAL: config updated")
     dissolve_duration = config.dissolve_duration or 1.5
 end)
-print("MURAL: config_update handler registered")
+print("MURAL: config watch registered")
 
 -- Watch for new mural images written by the service
 util.file_watch("current.png", function(raw)
     print("MURAL: file_watch triggered for current.png")
+    if not raw or #raw == 0 then
+        print("MURAL: current.png empty or missing, skipping")
+        return
+    end
     -- Dispose the outgoing old image if mid-transition
     if old_image then
         old_image:dispose()
