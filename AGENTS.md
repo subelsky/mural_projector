@@ -86,5 +86,14 @@ The device runs **Python 2.7**; dev/test runs Python 3. All Python code must wor
 The info-beamer platform docs are at `https://info-beamer.com/doc/`. Key pages:
 - **Package reference** (`/doc/package-reference`) — `package.json` and `node.json` schema, service permissions, node.lua API
 - **Device configuration** (`/doc/device-configuration`) — networking, WiFi, device-level setup
+- **Lua API** (`/doc/info-beamer`) — gl, resource, util, node, sys globals
+- **Debugging** (`/doc/debugging`) — `logread -f` for live logs, `/space/root/` for deployed files
 
 Use `WebFetch` to read these when working on platform integration, service configuration, or `node.json`/`package.json` changes.
+
+### info-beamer Lua API Gotchas
+- **Config watching:** Use `util.json_watch("config.json", handler)` — NOT `node.event("config_update", ...)`. Valid node events are: child_add, child_remove, content_update, content_remove, data, osc, input, connect, disconnect.
+- **`util.file_watch` calls handler immediately** at registration. If the file doesn't exist, handler may receive nil — always guard with `if not raw or #raw == 0 then return end`.
+- **Package files are read-only** — services cannot overwrite files included in the zip. `current.png` must NOT be in the zip since the service writes it at runtime.
+- **No output before `gl.setup()`** — any `print()` call before `gl.setup()` causes a silent black screen.
+- **info-beamer only supports JPEG and PNG** — no WebP, GIF, etc.
