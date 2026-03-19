@@ -31,19 +31,6 @@ sdk:
 	curl -fsSL -o hosted.lua https://raw.githubusercontent.com/info-beamer/package-sdk/master/hosted.lua
 	curl -fsSL -o hosted.py  https://raw.githubusercontent.com/info-beamer/package-sdk/master/hosted.py
 
-validate-json:
-	@for f in $(JSON_FILES); do \
-		python -m json.tool "$$f" > /dev/null || exit 1; \
-	done
-
-validate: validate-json
-	@for f in $(PACKAGE_FILES); do \
-		if [ ! -f "$$f" ]; then \
-			echo "Error: required file missing: $$f"; \
-			exit 1; \
-		fi; \
-	done
-
 release:
 	@echo "Releasing v$(VERSION)..."
 	git tag v$(VERSION)
