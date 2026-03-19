@@ -24,8 +24,7 @@ JSON_FILES := package.json node.json
 .PHONY: build clean sdk validate validate-json release
 
 build: sdk validate
-	cp default.png current.png
-	zip $(ZIP_NAME) $(PACKAGE_FILES) current.png
+	zip $(ZIP_NAME) $(PACKAGE_FILES)
 
 sdk:
 	curl -fsSL -o hosted.lua https://raw.githubusercontent.com/info-beamer/package-sdk/master/hosted.lua
