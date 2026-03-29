@@ -164,7 +164,7 @@ class MuralPoller:
             self.backoff_level = 0
 
             if location == self.current_location:
-                self.logger.debug("No change detected")
+                self.logger.info("No change detected")
                 return False
 
             self.logger.info("New mural detected: %s", location)

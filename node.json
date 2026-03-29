@@ -8,7 +8,7 @@
             "title": "Mural API URL",
             "name": "mural_url",
             "type": "string",
-            "default": "https://storyfield.net/api/mural/latest"
+            "default": "https://www.storyfield.net/api/mural/latest?beamer=true"
         },
         {
             "title": "Poll Interval (seconds)",

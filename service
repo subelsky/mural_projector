@@ -5,8 +5,12 @@ from __future__ import print_function
 import sys
 import logging
 
+print("MURAL SERVICE: starting imports", file=sys.stderr)
+
 from hosted import config
 from mural_poller import MuralPoller
+
+print("MURAL SERVICE: imports complete", file=sys.stderr)
 
 # Auto-restart when config changes in the dashboard
 config.restart_on_update()
@@ -14,7 +18,7 @@ config.restart_on_update()
 # Set up logging to stderr with timestamps
 logging.basicConfig(
     stream=sys.stderr,
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger("mural_service")
@@ -22,6 +26,8 @@ logger = logging.getLogger("mural_service")
 # Read config
 mural_url = config.mural_url
 poll_interval = config.poll_interval
+
+logger.info("Config loaded: url=%s interval=%s", mural_url, poll_interval)
 
 # Run the poller
 poller = MuralPoller(
